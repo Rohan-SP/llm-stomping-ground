@@ -33,16 +33,33 @@ def stream_ask(prompt: str) -> str:
             data = json.loads(line.decode("utf-8"))
             print(data["response"], end="", flush=True)
 
-def loop():
-    prompt_input = ""
-    while (prompt_input != "exit" or prompt_input != "0"  ):
-        prompt_input = input("What would you like to ask the model?: ")
+def chatbot():
+    # Setting the stage for the 
+    chat_history = [{"role": "system", "content": "You are a helpful assistant. You must remember all messages in this chat and can refer back to them if asked."}]
+    print(chat_history)
+    prompt_input = input("How can I help you?: ")
+    while (prompt_input != "exit" and prompt_input != "0"  ):
+        # Adding to the chat history to 
+        chat_history.append({"role": "user", "content":prompt_input})
+
+        response = requests.post(
+        "http://localhost:11434/api/chat",
+        json={"model": MODEL, "messages": chat_history, "stream": False},
+        timeout=120,
+        )
+
+        
+        model_message = response.json()['message']
+        chat_history.append(model_message)
+        print(model_message["content"])
 
 
+        prompt_input = input("\nHow can I help you?: ")
+        
     return 0
 
 
 if __name__ == "__main__":
-    ask_model = "Explain how a rocket works, in 25 paragraphs"
-    print("will now start streaming response")
-    print(ask(ask_model))
+    chatbot()
+
+
