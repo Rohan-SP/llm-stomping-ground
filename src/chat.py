@@ -1,8 +1,10 @@
 import requests
 import json
 
-MODEL = "qwen2:1.5b"  # or "phi3:3.8b"
-
+MODEL = "qwen2:1.5b" 
+MODLE1 = "phi3:3.8b"
+MODEL2 = "llama3:8b"
+MODEL3 = "deepseek-r1:8b"
 def ask(prompt: str) -> str:
     # This is the core of sending the data to the model using .post(url, **kwargs)
     # The "json=" is what the .post() looks out for to know is what being sent to the model
@@ -58,8 +60,36 @@ def chatbot():
         
     return 0
 
+# THIS DOES NOT WORK, DUE TO CPU/RAM LIMITATIONS, GOOD TO HAVE A SERIES OF TEST TO RUN ON EACH MODEL ONE BY ONE AND THEN COMPARE WHILE THE MODEL IS LOADED IN A TERMINAL
+def compare(model1, model2, prompt):
+    response1 = requests.post(
+        "http://localhost:11434/api/generate",
+        json={"model": model1, "prompt": prompt, "stream": False},
+        timeout=120,
+    )
+    # Since r is the return JSON from the model in Ollama, then raise_for_status() will 
+    response1.raise_for_status()    
+
+    # This basically will just take the r var and convert it to a JSON file using .json() and get the response from the object using ["response"] since it is now a JSON/Dict
+    print(model1 + ": " + response1.json()["response"]) 
+
+    response2 = requests.post(
+        "http://localhost:11434/api/generate",
+        json={"model": model2, "prompt": prompt, "stream": False},
+        timeout=120,
+    )
+    # Since r is the return JSON from the model in Ollama, then raise_for_status() will 
+    response2.raise_for_status()    
+
+    # This basically will just take the r var and convert it to a JSON file using .json() and get the response from the object using ["response"] since it is now a JSON/Dict
+    print(model2 + ": " + response2.json()["response"])
+
+
 
 if __name__ == "__main__":
-    chatbot()
+    print("Commencing test!")
+    prompt = "What is a number less then 4?"
+    print("Prompt: " + prompt )
+    compare(MODEL2,MODEL3,prompt)
 
 
