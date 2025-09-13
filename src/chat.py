@@ -1,17 +1,50 @@
 import requests
 import json
+import time
 
 MODEL = "qwen2:1.5b" 
 MODLE1 = "phi3:3.8b"
 MODEL2 = "llama3:8b"
 MODEL3 = "deepseek-r1:8b"
-def ask(prompt: str) -> str:
+
+TIME_LEDGER = {}
+
+def timer_start(timer_name: str) -> None:
+    """Start (or restart) a timer with the given name."""
+    TIME_LEDGER[timer_name] = time.perf_counter()
+    print(f"Timer '{timer_name}' started.")
+
+def timer_since(timer_name: str) -> float:
+    """Return and print elapsed time since a named timer was started."""
+    if timer_name not in TIME_LEDGER:
+        print(f"Timer '{timer_name}' has not been started.")
+        return -1.0
+
+    elapsed_time = time.perf_counter() - TIME_LEDGER[timer_name]
+    print(f"Elapsed time for '{timer_name}': {elapsed_time:.2f} seconds")
+    return elapsed_time
+
+def timer_reset(timer_name: str) -> None:
+    """Reset an existing timer."""
+    TIME_LEDGER[timer_name] = time.perf_counter()
+    print(f"Timer '{timer_name}' reset.")
+
+def timer_stop(timer_name: str) -> None:
+    """Stop (remove) a timer from the ledger."""
+    if timer_name in TIME_LEDGER:
+        del TIME_LEDGER[timer_name]
+        print(f"Timer '{timer_name}' stopped and removed.")
+    else:
+        print(f"Timer '{timer_name}' not found.")
+        
+
+def ask(model,prompt):
     # This is the core of sending the data to the model using .post(url, **kwargs)
     # The "json=" is what the .post() looks out for to know is what being sent to the model
     response = requests.post(
         "http://localhost:11434/api/generate",
-        json={"model": MODEL, "prompt": prompt, "stream": False},
-        timeout=120,
+        json={"model": model, "prompt": prompt, "stream": False},
+        timeout=1000,
     )
     # Since r is the return JSON from the model in Ollama, then raise_for_status() will 
     response.raise_for_status()    
@@ -84,12 +117,52 @@ def compare(model1, model2, prompt):
     # This basically will just take the r var and convert it to a JSON file using .json() and get the response from the object using ["response"] since it is now a JSON/Dict
     print(model2 + ": " + response2.json()["response"])
 
+def temp_ask(model, prompt, temp, seed):
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": model,
+            "prompt": prompt,
+            "temperature": temp,
+            "seed": seed,
+            "stream": False
+        },
+        timeout=120,
+    )
+
+    response.raise_for_status()
+    return response.json()["response"]
+
 
 
 if __name__ == "__main__":
     print("Commencing test!")
-    prompt = "What is a number less then 4?"
+    prompt = "Can you give me 4 uses for a bobby pin?"
+    prompt_list = [
+        "Tell me a fun fact about space.",
+        "List 5 animals that live in the ocean.",
+        "Explain how photosynthesis works in one short paragraph.",
+        "Give me three ideas for a healthy breakfast.",
+        "What are the main colors in a rainbow?",
+        "Write a short joke about cats.",
+        "Describe a sunset in one sentence.",
+        "What are 5 uses for a paperclip?",
+        "Summarize the story of Little Red Riding Hood in 3 sentences.",
+        "Explain why the sky looks blue."
+        ]
+
     print("Prompt: " + prompt )
-    compare(MODEL2,MODEL3,prompt)
+    
+    timer_start("whole")
+    timer_start("individual")
+    for i in range(10):
+        timer_reset("individual")
+        ask(MODEL,prompt_list[i])
+        timer_since("individual")
+    
+    timer_since("whole")
+
+
+    #print(temp_ask(MODEL2,prompt,0.5,177))
 
 
